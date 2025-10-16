@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import type { PetState } from '../types'
 
 export const usePetStore = create<PetState>((set) => ({
+  petName: 'PodPal',
   hunger: 80,
   happiness: 80,
   health: 100,

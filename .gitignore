@@ -22,3 +22,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+LLM_COMBINED_PROMPTS.md
+PROJECT_PLAN.md
+

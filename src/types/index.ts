@@ -6,6 +6,7 @@ export interface PetActions {
 }
 
 export interface PetState {
+  petName: string
   hunger: number
   happiness: number
   health: number
