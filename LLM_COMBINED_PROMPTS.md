@@ -1,57 +1,67 @@
-# PodPal — Combined, Standalone Action Prompts
+# PodPal — Combined, Standalone Action Prompts (Refined to Current Codebase)
 
-Each prompt is self‑contained, direct, and actionable. Send them in order; each can be executed independently without prior context.
+These prompts are aligned with what already exists in the repo. Each is self‑contained, direct, and actionable. Send them in order; each can be executed independently without prior context.
 
 ---
 
-## Prompt 01 — Install Deps, Boot App, and Scaffold Files
+## Prompt 01 — Verify Deps, Boot App, and Scaffold Missing Files Only
+Context (already present):
+- Existing files: src/stores/petStore.ts, src/stores/gameStore.ts, src/components/Canvas3D.tsx, src/components/Pet.tsx, src/App.tsx, src/types/index.ts. Deps are installed (react, react-dom, three, @react-three/fiber, @react-three/drei, zustand).
 Tasks:
-- Install dependencies: react, react-dom, three, @react-three/fiber, @react-three/drei, zustand.
 - Ensure dev server runs without errors.
-- Create these files with minimal stubs that compile: 
-  - src/stores/petStore.ts, src/stores/gameStore.ts, src/stores/roomStore.ts
-  - src/components/Canvas3D.tsx, src/components/Pet.tsx, src/components/Room.tsx, src/components/PlacedItem.tsx
+- Create only the missing stubs that compile:
+  - src/stores/roomStore.ts
+  - src/components/Room.tsx, src/components/PlacedItem.tsx
   - src/components/UI/StatsPanel.tsx, src/components/UI/ActionBar.tsx, src/components/UI/Inventory.tsx, src/components/UI/Shop.tsx
   - src/hooks/useGameLoop.ts, src/hooks/usePetNeeds.ts, src/hooks/useItemEffects.ts
-  - src/data/constants.ts, src/data/foods.ts, src/data/items.ts, src/types/index.ts
+  - src/data/constants.ts, src/data/foods.ts, src/data/items.ts
 Commands:
-- npm i react react-dom three @react-three/fiber @react-three/drei zustand
 - npm run dev
 Acceptance:
-- Dev server runs clean; all files exist and project compiles without TypeScript errors.
+- Dev server runs clean; new files exist and project compiles without TypeScript errors; existing files remain unchanged.
 
 ---
 
-## Prompt 02 — Implement Pet and Game Stores with Persistence and Constants
+## Prompt 02 — Extend Existing Stores + Add Constants and Persistence
+Context (already present):
+- usePetStore has hunger/happiness/health and actions { feed, play, clean, decayStats }.
+- useGameStore has { isPaused, lastTick } and actions { updateTick }.
 Tasks:
-- src/stores/petStore.ts: hunger/happiness/health (0–100), personality placeholder, lastInteractionAt, history[]; actions feed(amount), play(seconds), clean(), applyDelta({hunger,happiness,health}), record(event). Clamp 0–100.
-- src/stores/gameStore.ts: state { now, paused, coins:0, xp:0, level:1 }; actions tick(deltaSec), pause(), resume(), addCoins(n), addXP(n), save(), load(); persist to localStorage key podpal-save-v1 with safe JSON parse.
-- src/data/constants.ts: initial stats, decay rates/sec, coin/xp gains, autosave interval (60s), level thresholds.
+- src/stores/petStore.ts (augment, keep the existing actions pattern):
+  - Keep stats in 0–100. Add lastInteractionAt (number), history: Array<{ type: 'feed'|'play'|'clean'|'delta'; at: number; meta?: unknown }>.
+  - Implement actions: feed(amount: number), play(seconds: number), clean(), applyDelta(delta: Partial<{ hunger: number; happiness: number; health: number }>), record(event).
+  - Clamp after every mutation; update lastInteractionAt and record history entries.
+- src/stores/gameStore.ts (augment):
+  - State: { isPaused, lastTick, coins: 0, xp: 0, level: 1 }.
+  - actions: tick(deltaSec: number), pause(), resume(), addCoins(n: number), addXP(n: number), save(), load().
+  - Persist to localStorage key 'podpal-save-v1' with safe JSON parse and schema guards.
+- src/data/constants.ts: initial stats, per‑second decay rates, coin/xp gains, autosave interval (60s), level thresholds.
 Acceptance:
-- Actions update state correctly and clamp values; save()/load() round‑trip reliably without crashing on malformed storage.
+- Actions clamp values and update timestamps/history; save()/load() round‑trip reliably and ignore malformed storage.
 
 ---
 
-## Prompt 03 — Game Loop and Needs Decay Integration in App
+## Prompt 03 — Game Loop and Needs Decay Integration
 Tasks:
-- src/hooks/useGameLoop.ts: 1Hz timer; if paused do nothing; expose start/stop and cleanup on unmount; call gameStore.tick(1).
-- src/hooks/usePetNeeds.ts: on each tick, apply decay from constants and adjust by room/item modifiers; clamp 0–100; no negative overflow.
-- Integrate both hooks at App root so ticking begins on mount and respects pause/resume.
+- src/hooks/useGameLoop.ts: 1Hz timer; if isPaused do nothing; cleanup on unmount; call useGameStore.getState().actions.tick(1).
+- src/hooks/usePetNeeds.ts: subscribe to tick; on each tick apply decay from constants; clamp 0–100; no negative overflow.
+- Integrate hooks at App root so ticking begins on mount and respects pause/resume (replace or extend any current time handling based on lastTick/updateTick).
 Acceptance:
-- Stats visibly change over time when app runs; pausing halts decay; no duplicate timers or memory leaks.
+- Stats change over time; pausing halts decay; no duplicate timers or leaks.
 
 ---
 
-## Prompt 04 — 3D Scene, Pet Placeholder, and Core UI Wiring
+## Prompt 04 — Scene Additions, Pet Feedback, and Core UI Wiring
+Context (already present):
+- Canvas3D with ambient/directional lights and OrbitControls; Pet mesh placeholder rendered; full‑screen App layout.
 Tasks:
-- src/components/Canvas3D.tsx: R3F <Canvas>; ambient and directional lights; <OrbitControls/>; fills container.
-- src/components/Room.tsx: floor (Plane) + walls (Boxes); cleanliness subtly alters tint.
-- src/components/Pet.tsx: simple Box/Sphere; idle bob animation; color reflects happiness (green→red).
-- src/components/UI/StatsPanel.tsx: three live bars (hunger/happiness/health) 0–100.
-- src/components/UI/ActionBar.tsx: buttons Feed/Play/Clean wired to petStore actions (Feed uses default food from foods.ts; Play 30s).
+- src/components/Room.tsx: floor (Plane) + simple walls (Boxes); cleanliness tint stub for future integration.
+- src/components/Pet.tsx: add idle bob animation and color mapping based on happiness (green→red).
+- src/components/UI/StatsPanel.tsx: live bars (hunger/happiness/health) 0–100 from usePetStore.
+- src/components/UI/ActionBar.tsx: buttons Feed/Play/Clean wired to usePetStore.actions (Feed uses a default food from foods.ts; Play 30s).
 - Compose in App: render Canvas3D with Room + Pet; overlay StatsPanel and ActionBar.
 Acceptance:
-- Pet visible and bobbing; lighting and orbit controls work; buttons update stats; bars reflect in real time.
+- Pet visible and bobbing; lighting and orbit controls work; buttons update stats; bars reflect changes in real time.
 
 ---
 

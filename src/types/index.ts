@@ -14,10 +14,13 @@ export interface PetState {
 
 export interface GameActions {
   updateTick: (timestamp: number) => void
+  tick: (deltaSeconds: number) => void
+  togglePause: () => void
 }
 
 export interface GameState {
   isPaused: boolean
   lastTick: number
+  tickCount: number
   actions: GameActions
 }
